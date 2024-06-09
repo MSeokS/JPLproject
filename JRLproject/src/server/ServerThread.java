@@ -1,3 +1,5 @@
+package server;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
@@ -29,7 +31,7 @@ public class ServerThread extends Thread {
 
     static void broadcast(String message, ClientHandler sender) {
         for (ClientHandler client : clients) {
-            if (client != sender) {
+            if (!client.equals(sender)) {
                 client.sendMessage(message);
             }
         }

@@ -1,18 +1,26 @@
 package client;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
+
 import javax.swing.*;
 
 public class ChatGUI extends JFrame{	
-	public static String[] msg = new String[100];
-	public static int strCnt = 0;
-	public static JTextArea chatArea;
+	private String[] msg = new String[100];
+	private int strCnt = 0;
+	private JTextArea chatArea;
+	private JTextField statusField;
+	private String name = "";
+    private PrintWriter writer;
 	
 	ChatGUI() {
 		// 메인 프레임 생성
-        JFrame frame = new JFrame("Chat Application");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        setTitle("Chat Application");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(800, 600);
 
         // 중앙 채팅창
         chatArea = new JTextArea();
@@ -20,14 +28,14 @@ public class ChatGUI extends JFrame{
         JScrollPane scrollPane = new JScrollPane(chatArea);
 
         // 상태 표시 창
-        JTextField statusField = new JTextField("Status", 6);
+        statusField = new JTextField("Status", 6);
         statusField.setEditable(false);
         statusField.setHorizontalAlignment(JTextField.CENTER);
         
         // 입력 창
         JTextField inputField = new JTextField();
         
-        InputEnterListener inputlistener = new InputEnterListener(inputField, statusField);
+        InputEnterListener inputlistener = new InputEnterListener(inputField);
         inputField.addActionListener(inputlistener);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
@@ -51,7 +59,7 @@ public class ChatGUI extends JFrame{
         buttonPanel.add(button5);
         
         // 버튼 리스너 추가
-        ButtonClickListener buttonlistener = new ButtonClickListener(statusField);
+        ButtonClickListener buttonlistener = new ButtonClickListener();
         button1.addActionListener(buttonlistener);
         button2.addActionListener(buttonlistener);
         button3.addActionListener(buttonlistener);
@@ -63,62 +71,72 @@ public class ChatGUI extends JFrame{
         centerPanel.add(scrollPane, BorderLayout.CENTER);
         centerPanel.add(inputPanel, BorderLayout.SOUTH);
 
-        frame.add(centerPanel, BorderLayout.CENTER);
-        frame.add(buttonPanel, BorderLayout.SOUTH);
-
-        frame.setVisible(true);
+        add(centerPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
 	}
 	
 	// 프로그래밍 언어 버튼 클릭 시 이벤트 핸들러
 	class ButtonClickListener implements ActionListener {
-		private JTextField statusField;
 		
-		ButtonClickListener (JTextField statusField) {
-			this.statusField = statusField;
-			this.statusField.setText("All");
+		ButtonClickListener () {
+			statusField.setText("All");
 		}
 		public void actionPerformed (ActionEvent e) {
             JButton source = (JButton) e.getSource();
             
             if(source.getText().equals(statusField.getText())) {
-    			this.statusField.setText("All");
+    			statusField.setText("All");
             } else {
             	statusField.setText(source.getText());
             }
-            setMessage(statusField.getText());
+            setMessage();
 		}
 	}
 	
 	// 채팅 창에서 엔터 입력 시 이벤트 핸들러
 	class InputEnterListener implements ActionListener {
 		private JTextField inputField;
-		private JTextField statusField;		
 		
-		InputEnterListener (JTextField inputField, JTextField statusField) {
+		InputEnterListener (JTextField inputField) {
 			this.inputField = inputField;
-			this.statusField = statusField;
 		}
 		public void actionPerformed (ActionEvent e) {
-            getMessage(statusField.getText() + " : " + inputField.getText());
-            setMessage(statusField.getText());
+            getMessage("(" + statusField.getText() + ") " + name + " : " + inputField.getText());
+            setMessage();
             
-            SendMessage send = new SendMessage();
-            send.run(statusField.getText() + " : " + inputField.getText());
+            SendMessage send = new SendMessage(writer);
+            send.run("(" + statusField.getText() + ") " + name + " : " + inputField.getText());
             
             inputField.setText("");
 		}
 	}
 	
-	public void setMessage(String status) {
+	
+	public void setMessage() {
+		String status = statusField.getText();
 		chatArea.setText("");
 		for (int i = 0; i < strCnt; i++) {
-			if(status.equals(msg[i].split(" : ")[0]) || status.equals("All"))
+			if(status.equals(msg[i].substring(1, msg[i].indexOf(")"))) || status.equals("All"))
 				chatArea.append(msg[i] + "\n");
 		}
+		repaint();
     }
 	
 	public void getMessage(String message) {
 		msg[strCnt] = message;
 		strCnt++;
+		setMessage();
     }
+	
+	public void setWriter (PrintWriter writer) {
+		this.writer = writer;
+	}
+	
+	public void setName (String name) {
+		this.name = name;
+	}
+	
+	public String getName() {
+		return this.name;
+	}
 }

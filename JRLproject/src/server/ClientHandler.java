@@ -1,3 +1,5 @@
+package server;
+
 import java.io.*;
 import java.net.*;
 
@@ -5,29 +7,34 @@ class ClientHandler implements Runnable {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
-    private String clientName;
+    public String clientName;
 
     public ClientHandler(Socket socket) {
+        System.out.println("new client connected.");
         this.socket = socket;
+        try {
+        	in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+			out = new PrintWriter(this.socket.getOutputStream(), true);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
     @Override
     public void run() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-
-            
-            clientName = in.readLine();
-            System.out.println(clientName + " connected.");
-            ServerThread.broadcast(clientName + " has joined the chat", this);
-
+        	this.clientName = in.readLine();
+        	System.out.println(clientName + " is conneted.");
+        	
             String message;
-            while ((message = in.readLine()) != null) {
-                System.out.println("Received message from " + clientName + ": " + message);
-                ServerThread.broadcast(clientName + ": " + message, this);
+            while (true) {
+            	while ((message = in.readLine()) != null) {
+            		System.out.println("Received message : " + message);
+            		ServerThread.broadcast(message, this);
+            	}
+            	Thread.sleep(100);
             }
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -36,12 +43,17 @@ class ClientHandler implements Runnable {
                 e.printStackTrace();
             }
             ServerThread.removeClient(this);
-            System.out.println(clientName + " disconnected.");
-            ServerThread.broadcast(clientName + " has left the chat", this);
+            System.out.println(clientName + "is disconnected.");
         }
     }
 
     void sendMessage(String message) {
         out.println(message);
+    }
+    
+    boolean equals(ClientHandler obj) {
+    	if(this.clientName == obj.clientName)
+    		return true;
+    	else return false;
     }
 }
